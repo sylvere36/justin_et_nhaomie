@@ -218,14 +218,6 @@ h1, h2, h3, h4 {
   outline-offset: 2px;
 }
 
-/* Menu déroulant natif via <details> */
-details > summary {
-  list-style: none;
-}
-details > summary::-webkit-details-marker {
-  display: none;
-}
-
 /* ------------------------------------------------------------------ */
 /*  Badges de statut                                                   */
 /* ------------------------------------------------------------------ */

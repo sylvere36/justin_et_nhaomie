@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { WEDDING } from "@/lib/wedding";
-import { Sprig } from "@/app/components/icons";
+import { Sprig, EyeIcon, EyeOffIcon } from "@/app/components/icons";
 
 export default function LoginPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,16 +65,35 @@ export default function LoginPage() {
             <label htmlFor="password" className="field-label">
               Mot de passe
             </label>
-            <input
-              id="password"
-              type="password"
-              autoFocus
-              autoComplete="current-password"
-              className="field"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoFocus
+                autoComplete="current-password"
+                className="field"
+                style={{ paddingRight: "3rem" }}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="icon-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-encre-doux"
+                aria-label={
+                  showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
+                }
+                aria-pressed={showPassword}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOffIcon width={20} height={20} />
+                ) : (
+                  <EyeIcon width={20} height={20} />
+                )}
+              </button>
+            </div>
           </div>
 
           {error && (

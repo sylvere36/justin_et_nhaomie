@@ -371,33 +371,74 @@ function FilterTabs({
 }
 
 function ExportMenu() {
+  const [open, setOpen] = useState(false);
   const items: { filter: string; label: string }[] = [
     { filter: "all", label: "Tous les invités" },
     { filter: "confirmed", label: "Confirmés uniquement" },
     { filter: "declined", label: "Déclinés uniquement" },
     { filter: "pending", label: "En attente uniquement" },
   ];
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    if (open) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
-    <details className="relative">
-      <summary className="btn btn-outline list-none">
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="btn btn-outline"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
         <DownloadIcon width={18} height={18} />
         Exporter
-      </summary>
-      <div className="card absolute right-0 z-40 mt-2 w-60 overflow-hidden p-1.5">
-        <p className="px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-encre-doux">
-          Fichier Excel / CSV
-        </p>
-        {items.map((it) => (
-          <a
-            key={it.filter}
-            href={`/api/export?filter=${it.filter}`}
-            className="block rounded-lg px-3 py-2 text-sm text-encre transition-colors hover:bg-emeraude/8"
+      </button>
+
+      {open && (
+        <>
+          {/* Fond : assombri sur mobile, transparent (clic-dehors) sur desktop */}
+          <div
+            className="fixed inset-0 z-40 bg-encre/30 backdrop-blur-[1px] sm:bg-transparent sm:backdrop-blur-0"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          {/* Feuille du bas sur mobile, menu ancré sur desktop */}
+          <div
+            role="menu"
+            className="card fixed inset-x-3 bottom-3 z-50 animate-rise p-2 sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-60 sm:animate-none"
           >
-            {it.label}
-          </a>
-        ))}
-      </div>
-    </details>
+            <div className="flex items-center justify-between px-3 pb-1 pt-2 sm:pt-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-encre-doux">
+                Exporter en Excel / CSV
+              </p>
+              <button
+                onClick={() => setOpen(false)}
+                className="icon-btn -mr-1 h-8 w-8 text-encre-doux sm:hidden"
+                aria-label="Fermer"
+              >
+                <XIcon width={18} height={18} />
+              </button>
+            </div>
+            {items.map((it) => (
+              <a
+                key={it.filter}
+                href={`/api/export?filter=${it.filter}`}
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-3 py-3 text-sm text-encre transition-colors hover:bg-emeraude/8 sm:py-2"
+                role="menuitem"
+              >
+                {it.label}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

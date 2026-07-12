@@ -1,9 +1,43 @@
+import type { Metadata } from "next";
 import { getGuestByToken } from "@/lib/db";
 import { WEDDING } from "@/lib/wedding";
 import { Sprig } from "@/app/components/icons";
 import RsvpClient from "./RsvpClient";
 
 export const dynamic = "force-dynamic";
+
+const OG_TITLE = "Justin & Nahomie vous invitent — 22 août 2026";
+const OG_DESCRIPTION =
+  "C'est avec une immense joie que nous vous convions à notre mariage à Yamoussoukro. Découvrez le programme et confirmez votre présence.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: OG_TITLE,
+    description: OG_DESCRIPTION,
+    robots: { index: false, follow: false },
+    openGraph: {
+      type: "website",
+      locale: "fr_FR",
+      siteName: "Mariage de Justin & Nahomie",
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
+      images: [
+        {
+          url: "/og.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Justin & Nahomie — 22 août 2026",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
+      images: ["/og.jpg"],
+    },
+  };
+}
 
 export default async function RsvpPage({
   params,

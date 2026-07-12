@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Justin & Nahomie">
+  <rect x="6" y="6" width="500" height="500" rx="118" fill="#0e6b54"/>
+  <rect x="40" y="40" width="432" height="432" rx="92" fill="none" stroke="#e3c877" stroke-width="7" opacity="0.55"/>
+  <g fill="none" stroke="#c19a3e" stroke-width="27" stroke-linecap="round">
+    <circle cx="205" cy="286" r="92"/>
+    <circle cx="307" cy="286" r="92"/>
+  </g>
+  <!-- petit éclat doré -->
+  <path d="M256 120 l7 20 20 7 -20 7 -7 20 -7 -20 -20 -7 20 -7 z" fill="#e3c877"/>
+</svg>
