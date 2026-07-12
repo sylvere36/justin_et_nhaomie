@@ -1,0 +1,287 @@
+@import "tailwindcss";
+/* Mariage Justin & Nahomie — feuille de styles */
+
+/* ------------------------------------------------------------------ */
+/*  Palette du mariage : Vert émeraude · Terracotta · Or               */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-emeraude: #0e6b54;
+  --color-emeraude-fonce: #0a4d3d;
+  --color-emeraude-clair: #2f9c7f;
+  --color-terracotta: #bf5b34;
+  --color-terracotta-clair: #d98a5e;
+  --color-or: #c19a3e;
+  --color-or-clair: #e3c877;
+  --color-or-fonce: #9a7826;
+  --color-creme: #faf5ea;
+  --color-ivoire: #fffdf8;
+  --color-encre: #2a231c;
+  --color-encre-doux: #6f6355;
+
+  --shadow-soft: 0 1px 2px rgba(42, 35, 28, 0.04),
+    0 8px 24px -12px rgba(42, 35, 28, 0.18);
+  --shadow-card: 0 1px 3px rgba(42, 35, 28, 0.05),
+    0 20px 45px -25px rgba(14, 107, 84, 0.28);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-cormorant);
+  --font-script: var(--font-great-vibes);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-creme);
+  color: var(--color-encre);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-or) 35%, transparent);
+  color: var(--color-encre);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+.font-script {
+  font-family: var(--font-script), cursive;
+  letter-spacing: 0.01em;
+}
+
+/* Fond papier subtil pour les surfaces crème */
+.paper {
+  background-color: var(--color-creme);
+  background-image:
+    radial-gradient(1200px 600px at 15% -10%, color-mix(in srgb, var(--color-or-clair) 22%, transparent), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, color-mix(in srgb, var(--color-emeraude-clair) 14%, transparent), transparent 55%);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Séparateur décoratif (filet + losange doré)                        */
+/* ------------------------------------------------------------------ */
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--color-or);
+}
+.divider::before,
+.divider::after {
+  content: "";
+  height: 1px;
+  width: clamp(2rem, 18vw, 6rem);
+  background: linear-gradient(
+    to var(--dir, right),
+    transparent,
+    color-mix(in srgb, var(--color-or) 70%, transparent)
+  );
+}
+.divider::after { --dir: left; }
+.divider svg { flex: none; }
+
+/* ------------------------------------------------------------------ */
+/*  Boutons                                                            */
+/* ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  min-height: 44px;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-or);
+  outline-offset: 2px;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-emeraude);
+  color: var(--color-ivoire);
+  box-shadow: var(--shadow-soft);
+}
+.btn-primary:not(:disabled):hover {
+  background: var(--color-emeraude-fonce);
+}
+
+.btn-gold {
+  background: var(--color-or);
+  color: #2a1f06;
+  box-shadow: var(--shadow-soft);
+}
+.btn-gold:not(:disabled):hover {
+  background: var(--color-or-fonce);
+  color: var(--color-ivoire);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-emeraude);
+  border-color: color-mix(in srgb, var(--color-emeraude) 40%, transparent);
+}
+.btn-outline:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-emeraude) 8%, transparent);
+  border-color: var(--color-emeraude);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-encre-doux);
+  padding: 0.55rem 0.9rem;
+  min-height: 40px;
+}
+.btn-ghost:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-encre) 6%, transparent);
+  color: var(--color-encre);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Cartes & champs                                                    */
+/* ------------------------------------------------------------------ */
+.card {
+  background: var(--color-ivoire);
+  border: 1px solid color-mix(in srgb, var(--color-or) 22%, transparent);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-card);
+}
+
+.field-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-encre-doux);
+  margin-bottom: 0.35rem;
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-encre) 16%, transparent);
+  background: var(--color-ivoire);
+  padding: 0.7rem 0.9rem;
+  font-size: 1rem;
+  color: var(--color-encre);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.field::placeholder { color: color-mix(in srgb, var(--color-encre-doux) 75%, transparent); }
+.field:focus {
+  outline: none;
+  border-color: var(--color-emeraude);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-emeraude) 15%, transparent);
+}
+
+/* Boutons icône (actions de ligne) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  background: transparent;
+}
+.icon-btn:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-or);
+  outline-offset: 2px;
+}
+
+/* Menu déroulant natif via <details> */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Badges de statut                                                   */
+/* ------------------------------------------------------------------ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.28rem 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge-dot { width: 6px; height: 6px; border-radius: 9999px; }
+
+.badge-confirmed {
+  background: color-mix(in srgb, var(--color-emeraude) 12%, transparent);
+  color: var(--color-emeraude-fonce);
+  border-color: color-mix(in srgb, var(--color-emeraude) 30%, transparent);
+}
+.badge-confirmed .badge-dot { background: var(--color-emeraude); }
+
+.badge-declined {
+  background: color-mix(in srgb, var(--color-terracotta) 12%, transparent);
+  color: #8a3f1f;
+  border-color: color-mix(in srgb, var(--color-terracotta) 30%, transparent);
+}
+.badge-declined .badge-dot { background: var(--color-terracotta); }
+
+.badge-pending {
+  background: color-mix(in srgb, var(--color-or) 15%, transparent);
+  color: var(--color-or-fonce);
+  border-color: color-mix(in srgb, var(--color-or) 35%, transparent);
+}
+.badge-pending .badge-dot { background: var(--color-or); }
+
+/* ------------------------------------------------------------------ */
+/*  Animations                                                         */
+/* ------------------------------------------------------------------ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade { animation: fade 0.5s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
