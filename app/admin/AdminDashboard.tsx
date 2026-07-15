@@ -18,6 +18,7 @@ import {
   XIcon,
   UsersIcon,
   CalendarIcon,
+  IdCardIcon,
   Sprig,
 } from "@/app/components/icons";
 
@@ -162,7 +163,7 @@ export default function AdminDashboard({
             </span>
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-encre">
-                Justin &amp; Nahomie
+                Justin &amp; Naomie
               </p>
               <p className="text-xs text-encre-doux">Tableau de bord des invités</p>
             </div>
@@ -539,6 +540,18 @@ function GuestRow({
           >
             <LinkIcon />
           </button>
+          {g.status === "confirmed" && (
+            <a
+              href={`/api/carte/${g.token}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="icon-btn text-emeraude-fonce"
+              title="Carte d'accès (voir / imprimer)"
+              aria-label={`Voir la carte d'accès de ${g.full_name}`}
+            >
+              <IdCardIcon />
+            </a>
+          )}
           <span className="mx-1 h-5 w-px bg-encre/10" />
           <button
             onClick={onEdit}

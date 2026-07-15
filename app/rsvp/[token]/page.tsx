@@ -6,7 +6,7 @@ import RsvpClient from "./RsvpClient";
 
 export const dynamic = "force-dynamic";
 
-const OG_TITLE = "Justin & Nahomie vous invitent — 22 août 2026";
+const OG_TITLE = "Justin & Naomie vous invitent — 22 août 2026";
 const OG_DESCRIPTION =
   "C'est avec une immense joie que nous vous convions à notre mariage à Yamoussoukro. Découvrez le programme et confirmez votre présence.";
 
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       locale: "fr_FR",
-      siteName: "Mariage de Justin & Nahomie",
+      siteName: "Mariage de Justin & Naomie",
       title: OG_TITLE,
       description: OG_DESCRIPTION,
       images: [
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: "/og.jpg",
           width: 1200,
           height: 630,
-          alt: "Justin & Nahomie — 22 août 2026",
+          alt: "Justin & Naomie — 22 août 2026",
         },
       ],
     },

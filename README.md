@@ -1,4 +1,4 @@
-# Mariage de Justin & Nahomie — Invitations & Confirmations
+# Mariage de Justin & Naomie — Invitations & Confirmations
 
 Application web élégante pour inviter vos convives et suivre leurs réponses.
 « **Grace and Love for a Fresh Start** » — 22 août 2026, Yamoussoukro.

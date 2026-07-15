@@ -143,6 +143,17 @@ export function MapPinIcon(props: P) {
   );
 }
 
+export function IdCardIcon(props: P) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <circle cx="8" cy="11" r="2" />
+      <path d="M5 16.4a3.2 3.2 0 0 1 6 0" />
+      <path d="M14.5 10h4M14.5 14h4" />
+    </svg>
+  );
+}
+
 export function EyeIcon(props: P) {
   return (
     <svg {...base} {...props}>

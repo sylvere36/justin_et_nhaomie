@@ -10,6 +10,7 @@ import {
   CalendarIcon,
   MapPinIcon,
   ClockIcon,
+  DownloadIcon,
   Sprig,
 } from "@/app/components/icons";
 
@@ -82,7 +83,7 @@ function Hero() {
         <div className="overflow-hidden rounded-t-[10rem] rounded-b-3xl border border-or/40 bg-ivoire p-2 shadow-[var(--shadow-card)]">
           <Image
             src="/couple.jpg"
-            alt="Justin et Nahomie"
+            alt="Justin et Naomie"
             width={1000}
             height={1500}
             priority
@@ -115,7 +116,7 @@ function Invitation({ name }: { name: string }) {
         le signe de la grâce et de l’amour.
       </p>
       <p className="font-script mt-4 text-3xl text-terracotta">
-        Justin &amp; Nahomie
+        Justin &amp; Naomie
       </p>
     </section>
   );
@@ -302,9 +303,11 @@ function RsvpForm({ token, guest }: { token: string; guest: PublicGuest }) {
           </p>
         )}
 
+        {savedStatus === "confirmed" && <AccessCard token={token} />}
+
         <button
           onClick={() => setEditing(true)}
-          className="btn btn-ghost mx-auto mt-5"
+          className="btn btn-ghost mx-auto mt-6"
         >
           Modifier ma réponse
         </button>
@@ -441,6 +444,58 @@ function Stepper({
       >
         <span className="text-xl leading-none">+</span>
       </button>
+    </div>
+  );
+}
+
+// --- Carte d'accès numérique ----------------------------------------------
+
+function AccessCard({ token }: { token: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="mt-8 border-t border-or/20 pt-7">
+      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-terracotta">
+        Votre passeport d’invité
+      </p>
+      <h3 className="mt-1 font-serif text-2xl text-encre">
+        Carte d’accès numérique
+      </h3>
+      <p className="mx-auto mt-1 max-w-sm text-sm text-encre-doux">
+        Présentez-la à l’entrée de la réception — imprimée ou sur votre
+        téléphone.
+      </p>
+
+      <div
+        className="relative mx-auto mt-5 w-full max-w-[320px] overflow-hidden rounded-xl border border-or/30 shadow-[var(--shadow-card)]"
+        style={{ aspectRatio: "909 / 1925" }}
+      >
+        {!loaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-emeraude-fonce text-sm text-ivoire/70">
+            Génération de la carte…
+          </div>
+        )}
+        {/* Image générée dynamiquement côté serveur (style passeport). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/api/carte/${token}`}
+          alt="Carte d’accès numérique de Justin & Naomie"
+          width={1000}
+          height={1500}
+          onLoad={() => setLoaded(true)}
+          className="h-auto w-full"
+        />
+      </div>
+
+      <div className="mt-5 flex justify-center">
+        <a
+          href={`/api/carte/${token}?download=1`}
+          download
+          className="btn btn-gold"
+        >
+          <DownloadIcon width={18} height={18} />
+          Télécharger ma carte
+        </a>
+      </div>
     </div>
   );
 }

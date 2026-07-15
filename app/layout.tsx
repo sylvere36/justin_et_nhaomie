@@ -32,17 +32,17 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Justin & Nahomie — 22 août 2026",
+  title: "Justin & Naomie — 22 août 2026",
   description:
-    "Mariage de Justin & Nahomie — Grace and Love for a Fresh Start. Confirmez votre présence.",
+    "Mariage de Justin & Naomie — Grace and Love for a Fresh Start. Confirmez votre présence.",
   // L'invitation reste privée (non indexée), mais les aperçus de lien
   // (WhatsApp, SMS, réseaux sociaux) fonctionnent grâce aux balises Open Graph.
   robots: { index: false, follow: false },
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    siteName: "Mariage de Justin & Nahomie",
-    title: "Justin & Nahomie vous invitent — 22 août 2026",
+    siteName: "Mariage de Justin & Naomie",
+    title: "Justin & Naomie vous invitent — 22 août 2026",
     description:
       "Nous avons la joie de vous convier à notre mariage à Yamoussoukro. Découvrez le programme et confirmez votre présence.",
     images: [
@@ -50,13 +50,13 @@ export const metadata: Metadata = {
         url: "/og.jpg",
         width: 1200,
         height: 630,
-        alt: "Justin & Nahomie — 22 août 2026",
+        alt: "Justin & Naomie — 22 août 2026",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Justin & Nahomie vous invitent — 22 août 2026",
+    title: "Justin & Naomie vous invitent — 22 août 2026",
     description:
       "Nous avons la joie de vous convier à notre mariage à Yamoussoukro. Découvrez le programme et confirmez votre présence.",
     images: ["/og.jpg"],
