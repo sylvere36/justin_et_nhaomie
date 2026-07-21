@@ -19,15 +19,19 @@ export interface ProgramItem {
   place?: string;
 }
 
+// On se limite aux 3 étapes figurant sur l'invitation officielle.
 export const PROGRAM: ProgramItem[] = [
   { time: "10h00", label: "Mariage civil", place: "Mairie de Yamoussoukro" },
-  { time: "11h30", label: "Mariage religieux", place: "Cathédrale Saint-Augustin" },
-  { time: "13h00", label: "Séance de photos" },
-  { time: "14h30", label: "Réception & repas", place: "Morofé" },
-  { time: "16h30", label: "Bal" },
-  { time: "17h30", label: "Remise des cadeaux" },
-  { time: "18h00", label: "Gâteau & dragées" },
-  { time: "18h30", label: "Barbecue" },
+  {
+    time: "11h30",
+    label: "Mariage religieux",
+    place: "Cathédrale Saint-Augustin de Yamoussoukro",
+  },
+  {
+    time: "14h30",
+    label: "Réception",
+    place: "Résidence Charles Konan Bani — en face de la radio Elohim à Morofé",
+  },
 ];
 
 /**
