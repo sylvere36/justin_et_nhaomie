@@ -11,6 +11,7 @@ import {
   PencilIcon,
   TrashIcon,
   PlusIcon,
+  UploadIcon,
   DownloadIcon,
   SearchIcon,
   LogoutIcon,
@@ -65,7 +66,7 @@ export default function AdminDashboard({
   const [filter, setFilter] = useState<Filter>("all");
   const [toast, setToast] = useState<string | null>(null);
   const [modal, setModal] = useState<
-    { mode: "add" } | { mode: "edit"; guest: Guest } | null
+    { mode: "add" } | { mode: "edit"; guest: Guest } | { mode: "bulk" } | null
   >(null);
 
   const showToast = useCallback((msg: string) => {
@@ -244,6 +245,14 @@ export default function AdminDashboard({
             <ExportMenu />
 
             <button
+              onClick={() => setModal({ mode: "bulk" })}
+              className="btn btn-outline"
+            >
+              <UploadIcon width={18} height={18} />
+              Importer
+            </button>
+
+            <button
               onClick={() => setModal({ mode: "add" })}
               className="btn btn-primary"
             >
@@ -276,7 +285,18 @@ export default function AdminDashboard({
         </p>
       </main>
 
-      {modal && (
+      {modal && modal.mode === "bulk" && (
+        <BulkModal
+          onClose={() => setModal(null)}
+          onSaved={async (msg) => {
+            setModal(null);
+            await refresh();
+            showToast(msg);
+          }}
+        />
+      )}
+
+      {modal && (modal.mode === "add" || modal.mode === "edit") && (
         <GuestModal
           mode={modal.mode}
           guest={modal.mode === "edit" ? modal.guest : undefined}
@@ -599,6 +619,143 @@ function EmptyState({
           Ajouter un invité
         </button>
       )}
+    </div>
+  );
+}
+
+// --- Modale d'import groupé ------------------------------------------------
+
+function BulkModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: (msg: string) => void | Promise<void>;
+}) {
+  const [text, setText] = useState("");
+  const [category, setCategory] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const count = text
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*\d+\s*[-–.)]\s*/, "").trim())
+    .filter((l) => l.length > 0).length;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (count === 0) {
+      setError("Collez au moins un nom (un par ligne).");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const res = await fetch("/api/guests/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, category }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      await onSaved(
+        `${data.created} invité${data.created > 1 ? "s" : ""} importé${
+          data.created > 1 ? "s" : ""
+        }`
+      );
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "Import impossible.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-encre/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onMouseDown={onClose}
+    >
+      <div
+        className="animate-rise w-full max-w-lg rounded-t-2xl border border-or/30 bg-ivoire p-6 shadow-2xl sm:rounded-2xl sm:p-7"
+        onMouseDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulk-modal-title"
+      >
+        <div className="flex items-center justify-between">
+          <h2 id="bulk-modal-title" className="font-serif text-2xl text-encre">
+            Importer une liste
+          </h2>
+          <button onClick={onClose} className="icon-btn text-encre-doux" aria-label="Fermer">
+            <XIcon />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="mt-5 space-y-4">
+          <div>
+            <label htmlFor="bulk" className="field-label">
+              Un invité par ligne
+            </label>
+            <textarea
+              id="bulk"
+              autoFocus
+              rows={9}
+              className="field resize-y font-sans"
+              placeholder={"Prof Coulibaly Namory\nDr. Ange Barou\nM. et Mme Ahoussi\n…"}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <p className="mt-1.5 text-xs text-encre-doux">
+              La numérotation (« 1- », « 12. ») est ignorée. Les couples
+              (« et épouse », « M. et Mme ») reçoivent 2 places automatiquement.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="bulk-cat" className="field-label">
+              Catégorie commune (facultatif)
+            </label>
+            <input
+              id="bulk-cat"
+              className="field"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Ex. Corps professoral, Clergé, Invités d'honneur…"
+            />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-sm text-terracotta">
+              {error}
+            </p>
+          )}
+
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-sm text-encre-doux">
+              {count} invité{count > 1 ? "s" : ""} détecté{count > 1 ? "s" : ""}
+            </span>
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="btn btn-ghost">
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={saving || count === 0}
+                className="btn btn-primary"
+              >
+                {saving ? "Import…" : `Importer ${count || ""}`.trim()}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
