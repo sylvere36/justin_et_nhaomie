@@ -1,9 +1,11 @@
 import { getGuestByToken } from "@/lib/db";
-import { buildInteriorImage } from "@/lib/cardImage";
+import { buildInteriorImage, buildInteriorSpreadImage } from "@/lib/cardImage";
 
 export const dynamic = "force-dynamic";
 
-// Aperçu image de l'INTÉRIEUR (portrait) avec le nom de l'invité.
+// Aperçu image de l'INTÉRIEUR avec le nom de l'invité.
+//  - ?layout=paysage  → les 2 volets côte à côte (paysage)
+//  - sinon            → intérieur en une page (portrait)
 // Le téléchargement complet (2 pages) se fait via /api/carte/[token]/pdf.
 export async function GET(
   req: Request,
@@ -14,6 +16,11 @@ export async function GET(
   if (!guest) {
     return new Response("Carte introuvable", { status: 404 });
   }
-  const origin = new URL(req.url).origin;
-  return buildInteriorImage(origin, guest.full_name);
+  const url = new URL(req.url);
+  const origin = url.origin;
+  const layout = url.searchParams.get("layout");
+
+  return layout === "paysage"
+    ? buildInteriorSpreadImage(origin, guest.full_name)
+    : buildInteriorImage(origin, guest.full_name);
 }

@@ -451,6 +451,12 @@ function Stepper({
 // --- Carte d'accès numérique ----------------------------------------------
 
 function AccessCard({ token }: { token: string }) {
+  const [layout, setLayout] = useState<"portrait" | "paysage">("portrait");
+  const suffix = layout === "paysage" ? "?layout=paysage" : "";
+  const pdfHref = `/api/carte/${token}/pdf?download=1${
+    layout === "paysage" ? "&layout=paysage" : ""
+  }`;
+
   return (
     <div className="mt-8 border-t border-or/20 pt-7">
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-terracotta">
@@ -464,8 +470,33 @@ function AccessCard({ token }: { token: string }) {
         téléphone. Le PDF contient 2 pages : la couverture et votre invitation.
       </p>
 
-      {/* Aperçu : couverture (paysage) + intérieur avec le nom (portrait) */}
-      <div className="mx-auto mt-5 flex w-full max-w-[340px] flex-col gap-3">
+      {/* Choix de la disposition de l'intérieur (page 2 du PDF) */}
+      <div className="mt-4 flex justify-center">
+        <div className="inline-flex rounded-full border border-or/25 bg-ivoire p-1">
+          {(
+            [
+              { key: "portrait", label: "Portrait" },
+              { key: "paysage", label: "Côte à côte" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setLayout(opt.key)}
+              aria-pressed={layout === opt.key}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                layout === opt.key
+                  ? "bg-emeraude text-ivoire"
+                  : "text-encre-doux hover:text-encre"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Aperçu : couverture + intérieur (selon la disposition choisie) */}
+      <div className="mx-auto mt-4 flex w-full max-w-[340px] flex-col gap-3">
         <div className="overflow-hidden rounded-xl border border-or/30 shadow-[var(--shadow-card)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -480,10 +511,8 @@ function AccessCard({ token }: { token: string }) {
           {/* Image générée dynamiquement (intérieur + nom de l'invité). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/carte/${token}`}
+            src={`/api/carte/${token}${suffix}`}
             alt="Intérieur de l’invitation avec votre nom"
-            width={909}
-            height={1280}
             className="h-auto w-full"
           />
         </div>
@@ -491,8 +520,8 @@ function AccessCard({ token }: { token: string }) {
 
       <div className="mt-5 flex justify-center">
         <a
-          href={`/api/carte/${token}/pdf?download=1`}
-          download="invitation-justin-naomie.pdf"
+          href={pdfHref}
+          download={`invitation-justin-naomie-${layout}.pdf`}
           className="btn btn-gold"
         >
           <DownloadIcon width={18} height={18} />
