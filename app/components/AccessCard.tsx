@@ -15,13 +15,15 @@ export default function AccessCard({
   guestName: string;
 }) {
   const [layout, setLayout] = useState<"portrait" | "paysage">("portrait");
+  const [format, setFormat] = useState<"a4" | "a5">("a4");
   const suffix = layout === "paysage" ? "?layout=paysage" : "";
-  const pdfHref = `/api/carte/${token}/pdf?download=1${
-    layout === "paysage" ? "&layout=paysage" : ""
-  }`;
+  const pdfHref =
+    `/api/carte/${token}/pdf?download=1` +
+    (layout === "paysage" ? "&layout=paysage" : "") +
+    (format === "a5" ? "&format=a5" : "");
   const fileName = `Invitation-${guestFileSlug(guestName)}-${
     layout === "paysage" ? "cote-a-cote" : "portrait"
-  }.pdf`;
+  }-${format.toUpperCase()}.pdf`;
 
   return (
     <div>
@@ -36,8 +38,8 @@ export default function AccessCard({
         PDF contient 2 pages : la couverture et l’invitation.
       </p>
 
-      {/* Choix de la disposition de l'intérieur (page 2 du PDF) */}
-      <div className="mt-4 flex justify-center">
+      {/* Choix de la disposition (page 2) et du format d'impression */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
         <div className="inline-flex rounded-full border border-or/25 bg-ivoire p-1">
           {(
             [
@@ -51,6 +53,29 @@ export default function AccessCard({
               aria-pressed={layout === opt.key}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 layout === opt.key
+                  ? "bg-emeraude text-ivoire"
+                  : "text-encre-doux hover:text-encre"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="inline-flex rounded-full border border-or/25 bg-ivoire p-1">
+          {(
+            [
+              { key: "a4", label: "A4" },
+              { key: "a5", label: "A5" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setFormat(opt.key)}
+              aria-pressed={format === opt.key}
+              title={opt.key === "a4" ? "A4 (210×297 mm)" : "A5 (148×210 mm)"}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                format === opt.key
                   ? "bg-emeraude text-ivoire"
                   : "text-encre-doux hover:text-encre"
               }`}
