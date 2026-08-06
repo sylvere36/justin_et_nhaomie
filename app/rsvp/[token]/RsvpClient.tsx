@@ -451,7 +451,6 @@ function Stepper({
 // --- Carte d'accès numérique ----------------------------------------------
 
 function AccessCard({ token }: { token: string }) {
-  const [loaded, setLoaded] = useState(false);
   return (
     <div className="mt-8 border-t border-or/20 pt-7">
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-terracotta">
@@ -462,38 +461,42 @@ function AccessCard({ token }: { token: string }) {
       </h3>
       <p className="mx-auto mt-1 max-w-sm text-sm text-encre-doux">
         Présentez-la à l’entrée de la réception — imprimée ou sur votre
-        téléphone.
+        téléphone. Le PDF contient 2 pages : la couverture et votre invitation.
       </p>
 
-      <div
-        className="relative mx-auto mt-5 w-full max-w-[320px] overflow-hidden rounded-xl border border-or/30 shadow-[var(--shadow-card)]"
-        style={{ aspectRatio: "909 / 1925" }}
-      >
-        {!loaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-emeraude-fonce text-sm text-ivoire/70">
-            Génération de la carte…
-          </div>
-        )}
-        {/* Image générée dynamiquement côté serveur (style passeport). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`/api/carte/${token}`}
-          alt="Carte d’accès numérique de Justin & Naomie"
-          width={1000}
-          height={1500}
-          onLoad={() => setLoaded(true)}
-          className="h-auto w-full"
-        />
+      {/* Aperçu : couverture (paysage) + intérieur avec le nom (portrait) */}
+      <div className="mx-auto mt-5 flex w-full max-w-[340px] flex-col gap-3">
+        <div className="overflow-hidden rounded-xl border border-or/30 shadow-[var(--shadow-card)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/carte_d_acces/face.jpeg"
+            alt="Couverture de l’invitation"
+            width={1280}
+            height={909}
+            className="h-auto w-full"
+          />
+        </div>
+        <div className="overflow-hidden rounded-xl border border-or/30 shadow-[var(--shadow-card)]">
+          {/* Image générée dynamiquement (intérieur + nom de l'invité). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/carte/${token}`}
+            alt="Intérieur de l’invitation avec votre nom"
+            width={909}
+            height={1280}
+            className="h-auto w-full"
+          />
+        </div>
       </div>
 
       <div className="mt-5 flex justify-center">
         <a
-          href={`/api/carte/${token}?download=1`}
-          download
+          href={`/api/carte/${token}/pdf?download=1`}
+          download="invitation-justin-naomie.pdf"
           className="btn btn-gold"
         >
           <DownloadIcon width={18} height={18} />
-          Télécharger ma carte
+          Télécharger ma carte (PDF)
         </a>
       </div>
     </div>

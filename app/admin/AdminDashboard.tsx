@@ -562,12 +562,12 @@ function GuestRow({
           </button>
           {g.status === "confirmed" && (
             <a
-              href={`/api/carte/${g.token}`}
+              href={`/api/carte/${g.token}/pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="icon-btn text-emeraude-fonce"
-              title="Carte d'accès (voir / imprimer)"
-              aria-label={`Voir la carte d'accès de ${g.full_name}`}
+              title="Carte d'accès PDF (voir / imprimer)"
+              aria-label={`Ouvrir la carte d'accès PDF de ${g.full_name}`}
             >
               <IdCardIcon />
             </a>
