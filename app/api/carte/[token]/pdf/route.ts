@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import { getGuestByToken } from "@/lib/db";
+import { guestFileSlug } from "@/lib/wedding";
 import { buildInteriorImage, buildInteriorSpreadImage } from "@/lib/cardImage";
 
 export const dynamic = "force-dynamic";
@@ -52,12 +53,13 @@ export async function GET(
 
   const bytes = await pdf.save();
   const suffix = paysage ? "cote-a-cote" : "portrait";
+  const fileName = `Invitation-${guestFileSlug(guest.full_name)}-${suffix}.pdf`;
 
   return new Response(bytes as BodyInit, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `${isDownload ? "attachment" : "inline"}; filename="invitation-justin-naomie-${suffix}.pdf"`,
+      "Content-Disposition": `${isDownload ? "attachment" : "inline"}; filename="${fileName}"`,
       "Cache-Control": "no-store",
     },
   });

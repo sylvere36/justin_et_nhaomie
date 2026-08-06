@@ -59,3 +59,14 @@ export const EMAIL_SUBJECT =
 export function rsvpUrl(origin: string, token: string): string {
   return `${origin.replace(/\/$/, "")}/rsvp/${token}`;
 }
+
+/** Slug propre pour un nom de fichier (accents retirés, espaces → tirets). */
+export function guestFileSlug(name: string): string {
+  return (
+    name
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^A-Za-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "invite"
+  );
+}
