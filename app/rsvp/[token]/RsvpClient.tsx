@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { GuestStatus } from "@/lib/db";
 import { WEDDING, PROGRAM } from "@/lib/wedding";
 import AccessCard from "@/app/components/AccessCard";
+import BoardingPass from "@/app/components/BoardingPass";
 import {
   CheckIcon,
   XIcon,
@@ -306,6 +307,12 @@ function RsvpForm({ token, guest }: { token: string; guest: PublicGuest }) {
         {savedStatus === "confirmed" && (
           <div className="mt-8 border-t border-or/20 pt-7">
             <AccessCard token={token} guestName={guest.full_name} />
+          </div>
+        )}
+
+        {savedStatus === "confirmed" && (
+          <div className="mt-8 border-t border-or/20 pt-7">
+            <BoardingPass token={token} guestName={guest.full_name} />
           </div>
         )}
 

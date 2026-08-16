@@ -3,6 +3,7 @@ import { getGuestByToken } from "@/lib/db";
 import { WEDDING } from "@/lib/wedding";
 import { Sprig } from "@/app/components/icons";
 import AccessCard from "@/app/components/AccessCard";
+import BoardingPass from "@/app/components/BoardingPass";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export default async function CartePage({
 
   return (
     <main className="paper min-h-screen px-5 py-10">
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-2xl">
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-terracotta">
             {WEDDING.couple} · {WEDDING.dateLabel}
@@ -52,6 +53,10 @@ export default async function CartePage({
 
         <section className="card mt-6 p-6 sm:p-8">
           <AccessCard token={guest.token} guestName={guest.full_name} />
+        </section>
+
+        <section className="card mt-6 p-6 sm:p-8">
+          <BoardingPass token={guest.token} guestName={guest.full_name} />
         </section>
       </div>
     </main>
