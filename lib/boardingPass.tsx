@@ -50,6 +50,15 @@ function Roundel({ bg, plane }: { bg: string; plane: string }) {
   );
 }
 
+function Arrow({ color }: { color: string }) {
+  return (
+    <svg width="130" height="20" viewBox="0 0 130 20" fill="none">
+      <path d="M4 10 H116" stroke={color} strokeWidth="2" strokeDasharray="1 7" strokeLinecap="round" />
+      <path d="M108 4 L122 10 L108 16" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function hashNum(token: string): number {
   let h = 2166136261;
   for (let i = 0; i < token.length; i++) {
@@ -422,12 +431,247 @@ function Model2(guest: Guest, qr: string, compass: string) {
   );
 }
 
+// --- Modèle 3 : Ticket (bandeau doré, code-barres vertical) ----------------
+
+function Model3(guest: Guest, qr: string) {
+  const vbars = barcode(guest.token + "v", 74);
+  const sbars = barcode(guest.token + "s", 40);
+  const chevron = `repeating-linear-gradient(-45deg, ${GOLD} 0, ${GOLD} 9px, transparent 9px, transparent 20px)`;
+  return (
+    <div
+      style={{
+        display: "flex",
+        width: BP_W,
+        height: BP_H,
+        borderRadius: 30,
+        overflow: "hidden",
+        fontFamily: "Barlow",
+        backgroundColor: IVORY,
+      }}
+    >
+      {/* Souche principale */}
+      <div style={{ display: "flex", flexDirection: "column", width: 1150, height: BP_H }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: 120,
+            padding: "0 46px",
+            backgroundColor: EMERALD,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Roundel bg={GOLD} plane={EMERALD} />
+            <div style={{ display: "flex", flexDirection: "column", marginLeft: 18 }}>
+              <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 30, letterSpacing: 1, color: CREAM }}>
+                JUSTIN &amp; NAOMIE
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 13, letterSpacing: 4, color: GOLD_SOFT }}>
+                AIRLINES · PREMIÈRE CLASSE
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", padding: "7px 18px", borderRadius: 9999, backgroundColor: GOLD }}>
+            <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 20, letterSpacing: 3, color: EMERALD_DEEP }}>
+              PREMIÈRE
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", height: 4, backgroundColor: GOLD }} />
+
+        <div style={{ display: "flex", flex: 1, padding: "28px 44px" }}>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", marginRight: 38 }}>
+            {vbars.map((b, i) => (
+              <div key={i} style={{ width: 60, height: b.w * 2, backgroundColor: b.ink ? INK : "transparent" }} />
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+            <Block label="Nom du passager / Passenger" value={guest.full_name} />
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <Block label="De / From" value="JUSTIN" />
+              <Block label="Vol / Flight" value={flightNo(guest.token)} align="flex-end" />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <Block label="À / To" value="NAOMIE" />
+              <Block label="Date" value="22 AOÛT 2026" align="flex-end" />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <Block label="Porte / Gate" value={gateNo(guest.token)} big color={EMERALD} />
+              <Block label="Embarquement" value="10:00" big color={EMERALD} />
+              <Block label="Siège / Seat" value={seatNo(guest.token)} big color={EMERALD} align="flex-end" />
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 12, letterSpacing: 1, color: MUTED }}>
+                L’EMBARQUEMENT FERME 20 MINUTES AVANT LE DÉPART
+              </div>
+              <div style={{ display: "flex", flex: 1, height: 12, marginLeft: 14, backgroundImage: chevron }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", width: 0, borderLeft: `2px dashed ${GOLD}` }} />
+
+      {/* Talon */}
+      <div style={{ display: "flex", flexDirection: "column", width: 450, height: BP_H, padding: "30px 36px", justifyContent: "space-between", backgroundColor: CREAM }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 22, letterSpacing: 3, color: EMERALD }}>
+            BOARDING PASS
+          </div>
+          <Plane size={24} color={GOLD} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Block label="Passager" value={guest.full_name} />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+            <Block label="Porte" value={gateNo(guest.token)} big color={EMERALD} />
+            <Block label="Embarq." value="10:00" big color={EMERALD} />
+            <Block label="Siège" value={seatNo(guest.token)} big color={EMERALD} align="flex-end" />
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", padding: 11, backgroundColor: IVORY, borderRadius: 14, border: `1px solid ${GOLD}` }}>
+            <img src={qr} width={104} height={104} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            {sbars.map((b, i) => (
+              <div key={i} style={{ width: 90, height: b.w * 2, backgroundColor: b.ink ? INK : "transparent" }} />
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", height: 12, backgroundImage: chevron }} />
+      </div>
+    </div>
+  );
+}
+
+// --- Modèle 4 : Épuré (émeraude, avion filigrane + flèche) ------------------
+
+function Model4(guest: Guest, qr: string) {
+  const bars = barcode(guest.token);
+  return (
+    <div
+      style={{
+        display: "flex",
+        width: BP_W,
+        height: BP_H,
+        borderRadius: 30,
+        overflow: "hidden",
+        fontFamily: "Barlow",
+        backgroundColor: IVORY,
+      }}
+    >
+      {/* Souche principale */}
+      <div style={{ display: "flex", flexDirection: "column", width: 1150, height: BP_H }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 70, padding: "0 48px", backgroundColor: EMERALD }}>
+          <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 23, letterSpacing: 8, color: CREAM }}>
+            BOARDING PASS
+          </div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Plane size={22} color={GOLD_SOFT} />
+            <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 14, letterSpacing: 4, color: GOLD_SOFT, marginLeft: 12 }}>
+              PREMIÈRE CLASSE
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", height: 3, backgroundColor: GOLD }} />
+
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "32px 48px", position: "relative" }}>
+          {/* Avion en filigrane */}
+          <div style={{ display: "flex", position: "absolute", top: 62, left: 470, opacity: 0.07 }}>
+            <Plane size={230} color={EMERALD} />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 14, letterSpacing: 3, color: GOLD }}>
+                DE / FROM
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 82, letterSpacing: 1, color: EMERALD, lineHeight: 1 }}>
+                JUS
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 20, letterSpacing: 2, color: INK, marginTop: 2 }}>
+                JUSTIN
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 500, fontSize: 15, color: MUTED, marginTop: 8 }}>
+                22 août 2026 · 10:00
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", marginTop: 64 }}>
+              <Arrow color={GOLD} />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 14, letterSpacing: 3, color: GOLD }}>
+                À / TO
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 82, letterSpacing: 1, color: EMERALD, lineHeight: 1 }}>
+                NAO
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 20, letterSpacing: 2, color: INK, marginTop: 2 }}>
+                NAOMIE
+              </div>
+              <div style={{ fontFamily: "Barlow", fontWeight: 500, fontSize: 15, color: MUTED, marginTop: 8 }}>
+                Yamoussoukro · 14:30
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", height: 1, backgroundColor: LINE, marginTop: "auto" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+            <Block label="Passager" value={guest.full_name} color={EMERALD} labelColor={GOLD} />
+            <Block label="Vol" value={flightNo(guest.token)} color={EMERALD} labelColor={GOLD} />
+            <Block label="Porte" value={gateNo(guest.token)} color={EMERALD} labelColor={GOLD} />
+            <Block label="Siège" value={seatNo(guest.token)} color={EMERALD} labelColor={GOLD} />
+            <Block label="Classe" value="PREMIÈRE" color={EMERALD} labelColor={GOLD} align="flex-end" />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", width: 0, borderLeft: `2px dashed ${GOLD}` }} />
+
+      {/* Talon */}
+      <div style={{ display: "flex", flexDirection: "column", width: 450, height: BP_H }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 70, backgroundColor: EMERALD }}>
+          <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 18, letterSpacing: 5, color: GOLD_SOFT }}>
+            JUSTIN &amp; NAOMIE
+          </div>
+        </div>
+        <div style={{ display: "flex", height: 3, backgroundColor: GOLD }} />
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "26px 34px", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <Block label="Passager" value={guest.full_name} color={EMERALD} labelColor={GOLD} />
+            <Block label="Classe" value="PREMIÈRE" color={EMERALD} labelColor={GOLD} align="flex-end" />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <Block label="Date" value="22 AOÛT" color={EMERALD} labelColor={GOLD} />
+            <Block label="Embarq." value="10:00" color={EMERALD} labelColor={GOLD} />
+            <Block label="Siège" value={seatNo(guest.token)} color={EMERALD} labelColor={GOLD} align="flex-end" />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", height: 46 }}>
+              {bars.slice(0, 54).map((b, i) => (
+                <div key={i} style={{ width: b.w * 2, height: 46, backgroundColor: b.ink ? INK : "transparent" }} />
+              ))}
+            </div>
+            <div style={{ display: "flex", padding: 8, backgroundColor: IVORY, borderRadius: 12, border: `1px solid ${GOLD}` }}>
+              <img src={qr} width={78} height={78} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Assemblage ------------------------------------------------------------
 
 export async function buildBoardingPass(
   origin: string,
   guest: Guest,
-  model: 1 | 2
+  model: 1 | 2 | 3 | 4
 ): Promise<ImageResponse> {
   const [barlow, barlowMed, barlowSemi, barlowBold, greatVibes, spaceMono, marcellus] =
     await Promise.all([
@@ -448,7 +692,14 @@ export async function buildBoardingPass(
   });
 
   const compass = `data:image/svg+xml;base64,${Buffer.from(compassSvg).toString("base64")}`;
-  const element = model === 2 ? Model2(guest, qr, compass) : Model1(guest, qr);
+  const element =
+    model === 4
+      ? Model4(guest, qr)
+      : model === 3
+        ? Model3(guest, qr)
+        : model === 2
+          ? Model2(guest, qr, compass)
+          : Model1(guest, qr);
 
   return new ImageResponse(element, {
     width: BP_W,

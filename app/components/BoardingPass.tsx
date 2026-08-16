@@ -13,7 +13,7 @@ export default function BoardingPass({
   token: string;
   guestName: string;
 }) {
-  const [model, setModel] = useState<1 | 2>(1);
+  const [model, setModel] = useState<1 | 2 | 3 | 4>(1);
   const [format, setFormat] = useState<"a4" | "a5">("a4");
 
   const pdfHref = `/api/embarquement/${token}/pdf?download=1&model=${model}${
@@ -24,8 +24,10 @@ export default function BoardingPass({
   )}-modele${model}-${format.toUpperCase()}.pdf`;
 
   const models = [
-    { key: 1 as const, label: "Modèle 1", sub: "Classique" },
+    { key: 1 as const, label: "Modèle 1", sub: "Compagnie" },
     { key: 2 as const, label: "Modèle 2", sub: "Prestige" },
+    { key: 3 as const, label: "Modèle 3", sub: "Ticket" },
+    { key: 4 as const, label: "Modèle 4", sub: "Épuré" },
   ];
 
   return (

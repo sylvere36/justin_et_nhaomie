@@ -27,7 +27,8 @@ export async function GET(
   const url = new URL(req.url);
   const origin = url.origin;
   const isDownload = url.searchParams.get("download") === "1";
-  const model = url.searchParams.get("model") === "2" ? 2 : 1;
+  const m = Number(url.searchParams.get("model"));
+  const model = m === 2 || m === 3 || m === 4 ? m : 1;
   const format = url.searchParams.get("format") === "a5" ? "a5" : "a4";
   const { long: LONG, short: SHORT } = PAGE[format];
 
