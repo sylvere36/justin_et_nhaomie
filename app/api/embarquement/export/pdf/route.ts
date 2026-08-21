@@ -10,20 +10,27 @@ export const maxDuration = 60;
 
 // ---------------------------------------------------------------------------
 // Export global des cartes d'embarquement — PDF VECTORIEL (pdf-lib).
-// Rendu direct (pas de Satori) : rapide et fiable même pour des centaines
-// d'invités. Feuille A4 portrait, 4 cartes par page, repères de coupe discrets.
+// Reproduction fidèle du MODÈLE 3 (« Ticket Or ») choisi par le couple, dessiné
+// directement (pas de Satori) pour rester rapide et fiable sur Vercel.
+// Les coordonnées sont exprimées dans l'espace du modèle (1600×620) puis mises
+// à l'échelle de la carte via k = largeur_carte / 1600.
 // ---------------------------------------------------------------------------
 
-// Couleurs (identiques au modèle 3 « Ticket Or »).
+// Couleurs (identiques au modèle 3).
 const GOLD = rgb(0.784, 0.635, 0.29);
 const GOLD_SOFT = rgb(0.89, 0.784, 0.467);
 const EMERALD = rgb(0.055, 0.42, 0.329);
 const EMERALD_DEEP = rgb(0.031, 0.235, 0.188);
 const IVORY = rgb(1, 0.992, 0.973);
+const CREAM = rgb(0.98, 0.961, 0.918);
 const INK = rgb(0.133, 0.125, 0.11);
 const MUTED = rgb(0.549, 0.522, 0.467);
-const LINE = rgb(0.906, 0.875, 0.804);
+const WHITE = rgb(1, 1, 1);
 const MARK = rgb(0.72, 0.72, 0.72);
+
+// Modèle (px).
+const BP_W = 1600;
+const BP_H = 620;
 
 // Page A4 portrait (points) + géométrie 4 par page.
 const PAGE_W = 595;
@@ -32,8 +39,7 @@ const MARGIN_Y = 30;
 const GAP = 16;
 const PER_PAGE = 4;
 const CARD_H = (PAGE_H - 2 * MARGIN_Y - (PER_PAGE - 1) * GAP) / PER_PAGE;
-const BP_RATIO = 1600 / 620;
-const CARD_W = CARD_H * BP_RATIO;
+const CARD_W = (CARD_H * BP_W) / BP_H;
 const CARD_X = (PAGE_W - CARD_W) / 2;
 
 const MARK_LEN = 14;
@@ -55,7 +61,7 @@ function tableValue(g: Guest): string {
   const s = (g.table_name ?? "").trim();
   return s || "À l'accueil";
 }
-function barcodeBars(t: string, n: number): { w: number; ink: boolean }[] {
+function barcode(t: string, n: number): { w: number; ink: boolean }[] {
   const s =
     hashNum(t).toString(2) +
     hashNum(t + "x").toString(2) +
@@ -81,32 +87,13 @@ type Fonts = {
   bold: PDFFont;
   semi: PDFFont;
   med: PDFFont;
-  script: PDFFont;
-  mono: PDFFont;
 };
 
-// Texte ajusté à une largeur max (réduit la taille si nécessaire).
-function drawFit(
-  page: PDFPage,
-  text: string,
-  x: number,
-  y: number,
-  maxW: number,
-  size: number,
-  font: PDFFont,
-  color: ReturnType<typeof rgb>,
-  align: "left" | "right" = "left"
-) {
-  let s = size;
-  let tw = font.widthOfTextAtSize(text, s);
-  while (tw > maxW && s > 4) {
-    s -= 0.5;
-    tw = font.widthOfTextAtSize(text, s);
-  }
-  const dx = align === "right" ? x + maxW - tw : x;
-  page.drawText(text, { x: dx, y, size: s, font, color });
-}
+// Chemin SVG de l'avion (viewBox 24×24), comme le composant <Plane>.
+const PLANE =
+  "M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z";
 
+// Dessine une carte modèle 3 dans le rectangle {x,y,w,h}.
 function drawCard(
   page: PDFPage,
   f: Fonts,
@@ -114,143 +101,203 @@ function drawCard(
   guest: Guest,
   qr: PDFImage
 ) {
-  const { x, y, w, h } = box;
-  const top = y + h;
-  const right = x + w;
+  const { x, y, w } = box;
+  const top = y + box.h;
+  const k = w / BP_W; // échelle modèle → carte
+
+  // Transforme une coordonnée modèle (origine haut-gauche, y vers le bas).
+  const TX = (sx: number) => x + sx * k;
+  const TYtop = (sy: number) => top - sy * k; // bord supérieur d'un élément
+
+  // Rectangle en coordonnées modèle.
+  const rect = (
+    sx: number,
+    sy: number,
+    sw: number,
+    sh: number,
+    color: ReturnType<typeof rgb>,
+    border?: { color: ReturnType<typeof rgb>; width: number }
+  ) =>
+    page.drawRectangle({
+      x: TX(sx),
+      y: top - (sy + sh) * k,
+      width: sw * k,
+      height: sh * k,
+      color,
+      borderColor: border?.color,
+      borderWidth: border ? border.width * k : undefined,
+    });
+
+  // Texte : sy = haut du texte (modèle) ; baseline ≈ haut + 0.80·taille.
+  const text = (
+    t: string,
+    sx: number,
+    sy: number,
+    sizePx: number,
+    font: PDFFont,
+    color: ReturnType<typeof rgb>,
+    opts: { align?: "left" | "right"; maxWpx?: number } = {}
+  ) => {
+    let size = sizePx * k;
+    let tw = font.widthOfTextAtSize(t, size);
+    const maxW = opts.maxWpx !== undefined ? opts.maxWpx * k : Infinity;
+    while (tw > maxW && size > 3) {
+      size -= 0.3;
+      tw = font.widthOfTextAtSize(t, size);
+    }
+    const px = opts.align === "right" ? TX(sx) - tw : TX(sx);
+    page.drawText(t, { x: px, y: top - (sy + sizePx * 0.8) * k, size, font, color });
+  };
+
+  // Bloc « label + valeur » du modèle.
+  const block = (
+    label: string,
+    value: string,
+    sx: number,
+    sy: number,
+    o: {
+      big?: boolean;
+      color?: ReturnType<typeof rgb>;
+      align?: "left" | "right";
+      maxWpx?: number;
+    } = {}
+  ) => {
+    const color = o.color ?? INK;
+    text(label, sx, sy, 13, f.med, MUTED, { align: o.align, maxWpx: o.maxWpx });
+    text(value, sx, sy + 17, o.big ? 30 : 23, f.semi, color, {
+      align: o.align,
+      maxWpx: o.maxWpx,
+    });
+  };
 
   // Fond ivoire (coins droits pour la découpe).
-  page.drawRectangle({ x, y, width: w, height: h, color: IVORY });
+  rect(0, 0, BP_W, BP_H, IVORY);
 
+  // ---- Souche principale (largeur 1150) ----
   // Bande dorée + filet émeraude.
-  const hb = 30;
-  page.drawRectangle({ x, y: top - hb, width: w, height: hb, color: GOLD });
-  page.drawRectangle({ x, y: top - hb - 1.6, width: w, height: 1.6, color: EMERALD });
+  rect(0, 0, 1150, 120, GOLD);
+  rect(0, 120, 1150, 4, EMERALD);
 
-  page.drawText("JUSTIN & NAOMIE", {
-    x: x + 12,
-    y: top - 15,
-    size: 11,
-    font: f.bold,
-    color: EMERALD_DEEP,
+  // Pastille émeraude + avion (roundel).
+  page.drawCircle({ x: TX(74), y: TYtop(60), size: 28 * k, color: EMERALD });
+  page.drawSvgPath(PLANE, {
+    x: TX(74) - 15 * k,
+    y: TYtop(60) + 15 * k,
+    scale: (30 / 24) * k,
+    color: GOLD_SOFT,
   });
-  page.drawText("CARTE D'EMBARQUEMENT · PREMIÈRE CLASSE", {
-    x: x + 12,
-    y: top - 25,
-    size: 5.5,
-    font: f.med,
+
+  text("JUSTIN & NAOMIE", 120, 42, 30, f.bold, EMERALD_DEEP);
+  text("AIRLINES · PREMIÈRE CLASSE", 120, 80, 13, f.semi, EMERALD);
+
+  // Puce « PREMIÈRE » (émeraude), alignée à droite de la souche.
+  const pillTxt = "PREMIÈRE";
+  const pillTW = f.bold.widthOfTextAtSize(pillTxt, 20 * k);
+  const pillW = pillTW + 2 * 18 * k;
+  const pillRight = TX(1104);
+  page.drawRectangle({
+    x: pillRight - pillW,
+    y: TYtop(77),
+    width: pillW,
+    height: 34 * k,
     color: EMERALD,
   });
-  const fl = flightNo(guest.token);
-  drawFit(page, fl, right - 80, top - 20, 68, 12, f.bold, EMERALD_DEEP, "right");
-
-  // Séparateur perforé vertical (main / talon).
-  const xsplit = x + w * 0.66;
-  page.drawLine({
-    start: { x: xsplit, y: y + 10 },
-    end: { x: xsplit, y: top - hb - 8 },
-    thickness: 1,
-    color: LINE,
-    dashArray: [2, 3],
+  page.drawText(pillTxt, {
+    x: pillRight - pillW + 18 * k,
+    y: TYtop(77) + 10 * k,
+    size: 20 * k,
+    font: f.bold,
+    color: GOLD_SOFT,
   });
 
-  // ---- Panneau principal ----
-  const bx = x + 12;
-  const mainRight = xsplit - 12;
-  const mainW = mainRight - bx;
-
-  let cy = top - hb - 14;
-  page.drawText("PASSAGER / PASSENGER", {
-    x: bx,
-    y: cy,
-    size: 5.5,
-    font: f.med,
-    color: MUTED,
-  });
-  cy -= 12;
-  drawFit(page, guest.full_name, bx, cy, mainW, 10, f.semi, INK);
-
-  // Itinéraire JUS -> NAO
-  cy -= 30;
-  page.drawText("JUS", { x: bx, y: cy, size: 22, font: f.bold, color: EMERALD });
-  page.drawText("Justin", { x: bx + 1, y: cy - 9, size: 7, font: f.med, color: MUTED });
-  const naoW = f.bold.widthOfTextAtSize("NAO", 22);
-  page.drawText("NAO", { x: mainRight - naoW, y: cy, size: 22, font: f.bold, color: EMERALD });
-  const naoLabW = f.med.widthOfTextAtSize("Naomie", 7);
-  page.drawText("Naomie", { x: mainRight - naoLabW, y: cy - 9, size: 7, font: f.med, color: MUTED });
-  // Trajectoire pointillée + avion (petit chevron).
-  const midY = cy + 7;
-  page.drawLine({
-    start: { x: bx + naoW + 10, y: midY },
-    end: { x: mainRight - naoW - 10, y: midY },
-    thickness: 1,
-    color: GOLD,
-    dashArray: [1, 3],
-  });
-  const planeX = (bx + naoW + 10 + mainRight - naoW - 10) / 2;
-  page.drawSvgPath("M0 0 L10 -3 L0 -6 L2 -3 Z", {
-    x: planeX - 5,
-    y: midY + 3,
-    color: GOLD,
-    scale: 1,
-  });
-
-  // Grille d'infos : DATE / EMBARQ / PORTE / TABLE
-  cy -= 26;
-  const cols: { l: string; v: string; c: ReturnType<typeof rgb>; big?: boolean }[] = [
-    { l: "DATE", v: "22 AOÛT 2026", c: INK },
-    { l: "EMBARQ.", v: "10:00", c: INK },
-    { l: "PORTE", v: gateNo(guest.token), c: INK },
-    { l: "TABLE", v: tableValue(guest), c: EMERALD, big: true },
-  ];
-  const colW = mainW / 4;
-  cols.forEach((c, i) => {
-    const cxp = bx + i * colW;
-    page.drawText(c.l, { x: cxp, y: cy, size: 5.5, font: f.med, color: MUTED });
-    drawFit(page, c.v, cxp, cy - 11, colW - 3, c.big ? 10 : 9, f.semi, c.c);
-  });
-
-  // Code-barres
-  cy -= 34;
-  const bars = barcodeBars(guest.token, 48);
-  let cxb = bx;
-  const bh = 12;
-  for (const b of bars) {
-    const bw = b.w * 1.3;
-    if (cxb + bw > mainRight) break;
-    if (b.ink) page.drawRectangle({ x: cxb, y: cy, width: bw, height: bh, color: INK });
-    cxb += bw + 1;
+  // Code-barres vertical (gauche du corps) : barres empilées, largeur 60.
+  const vbars = barcode(guest.token + "v", 74);
+  const vH = vbars.reduce((s, b) => s + b.w * 2, 0);
+  let vy = 152 + (440 - vH) / 2;
+  for (const b of vbars) {
+    if (b.ink) rect(44, vy, 60, b.w * 2, INK);
+    vy += b.w * 2;
   }
 
-  // ---- Talon ----
-  const sx = xsplit + 12;
-  const sRight = right - 12;
-  let sy = top - hb - 14;
-  page.drawText("BOARDING PASS", { x: sx, y: sy, size: 7, font: f.bold, color: EMERALD });
-
-  const qrSize = 60;
-  sy -= 10;
-  // Cartouche blanc derrière le QR.
-  page.drawRectangle({
-    x: sx - 2,
-    y: sy - qrSize - 2,
-    width: qrSize + 4,
-    height: qrSize + 4,
-    color: rgb(1, 1, 1),
-    borderColor: GOLD,
-    borderWidth: 0.6,
+  // Colonne d'infos (x 142 → 1104), 4 lignes réparties.
+  const cL = 142;
+  const cR = 1104;
+  block("Nom du passager / Passenger", guest.full_name, cL, 150, { maxWpx: 700 });
+  block("De / From", "JUSTIN", cL, 250);
+  block("Vol / Flight", flightNo(guest.token), cR, 250, { align: "right" });
+  block("À / To", "NAOMIE", cL, 350);
+  block("Date", "22 AOÛT 2026", cR, 350, { align: "right" });
+  block("Porte / Gate", gateNo(guest.token), cL, 448, { big: true, color: EMERALD });
+  block("Embarquement", "10:00", 560, 448, { big: true, color: EMERALD });
+  block("Table", tableValue(guest), cR, 448, {
+    big: true,
+    color: EMERALD,
+    align: "right",
+    maxWpx: 330,
   });
-  page.drawImage(qr, { x: sx, y: sy - qrSize, width: qrSize, height: qrSize });
 
-  // Table (rappel) à droite du QR.
-  const tRx = sx + qrSize + 10;
-  page.drawText("TABLE", { x: tRx, y: sy - 6, size: 5.5, font: f.med, color: MUTED });
-  drawFit(page, tableValue(guest), tRx, sy - 17, sRight - tRx, 9, f.semi, EMERALD);
-  page.drawText("PORTE", { x: tRx, y: sy - 34, size: 5.5, font: f.med, color: MUTED });
-  page.drawText(gateNo(guest.token), { x: tRx, y: sy - 45, size: 9, font: f.semi, color: INK });
+  // Note + chevrons dorés (bas de souche).
+  text("L'EMBARQUEMENT FERME 20 MINUTES AVANT LE DÉPART", cL, 566, 12, f.semi, MUTED);
+  const noteW = f.semi.widthOfTextAtSize(
+    "L'EMBARQUEMENT FERME 20 MINUTES AVANT LE DÉPART",
+    12 * k
+  );
+  chevrons(TX(cL) + noteW + 14 * k, TX(cR), TYtop(560), 12 * k);
 
-  // Fioriture bas de talon.
-  drawFit(page, "Justin & Naomie", sx, y + 20, sRight - sx, 15, f.script, GOLD);
-  page.drawText("22 · 08 · 2026", { x: sx, y: y + 10, size: 6, font: f.mono, color: MUTED });
+  // ---- Talon (x 1150 → 1600) ----
+  rect(1150, 0, 450, BP_H, CREAM);
+  // Perforation.
+  page.drawLine({
+    start: { x: TX(1150), y: TYtop(0) },
+    end: { x: TX(1150), y: TYtop(BP_H) },
+    thickness: 2 * k,
+    color: GOLD,
+    dashArray: [10 * k, 8 * k],
+  });
+
+  const sL = 1186;
+  const sR = 1564;
+  text("BOARDING PASS", sL, 32, 22, f.bold, EMERALD);
+  page.drawSvgPath(PLANE, {
+    x: TX(sR) - 24 * k,
+    y: TYtop(28) + 24 * k,
+    scale: k,
+    color: GOLD,
+  });
+
+  block("Passager", guest.full_name, sL, 150, { maxWpx: 360 });
+  block("Porte", gateNo(guest.token), sL, 250, { big: true, color: EMERALD });
+  block("Embarq.", "10:00", sR, 250, { big: true, color: EMERALD, align: "right" });
+  block("Table", tableValue(guest), sL, 332, { big: true, color: EMERALD, maxWpx: 360 });
+
+  // QR encadré or + code-barres court.
+  rect(1186, 430, 126, 126, IVORY, { color: GOLD, width: 1 });
+  page.drawImage(qr, { x: TX(1197), y: top - (441 + 104) * k, width: 104 * k, height: 104 * k });
+  const sbars = barcode(guest.token + "s", 40);
+  const sH = sbars.reduce((s, b) => s + b.w * 2, 0);
+  let sy2 = 493 - sH / 2;
+  for (const b of sbars) {
+    if (b.ink) rect(1440, sy2, 90, b.w * 2, INK);
+    sy2 += b.w * 2;
+  }
+
+  // Chevrons bas de talon.
+  chevrons(TX(sL), TX(sR), TYtop(584), 12 * k);
+
+  // --- Chevrons dorés (hachures diagonales -45°) ---
+  function chevrons(x0: number, x1: number, yTop: number, h: number) {
+    const step = 20 * k;
+    for (let xx = x0; xx < x1; xx += step) {
+      const ex = Math.min(xx + h, x1);
+      const ey = yTop - (ex - xx);
+      page.drawLine({
+        start: { x: xx, y: yTop },
+        end: { x: ex, y: ey },
+        thickness: 9 * k,
+        color: GOLD,
+      });
+    }
+  }
 }
 
 // Repères de coupe d'une page (dans les marges, hors des cartes).
@@ -319,8 +366,6 @@ export async function GET(req: Request) {
     bold: await loadFont(origin, pdf, "Barlow-Bold.ttf"),
     semi: await loadFont(origin, pdf, "Barlow-SemiBold.ttf"),
     med: await loadFont(origin, pdf, "Barlow-Medium.ttf"),
-    script: await loadFont(origin, pdf, "GreatVibes-Regular.ttf"),
-    mono: await loadFont(origin, pdf, "SpaceMono-Regular.ttf"),
   };
 
   let page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -331,10 +376,10 @@ export async function GET(req: Request) {
     const g = guests[idx];
     const qrPng = await QRCode.toBuffer(`${origin}/rsvp/${g.token}`, {
       type: "png",
-      margin: 1,
+      margin: 0,
       width: 150,
       errorCorrectionLevel: "M",
-      color: { dark: "#083c30", light: "#ffffffff" },
+      color: { dark: "#083c30", light: "#fffdf8ff" },
     });
     const qr = await pdf.embedPng(qrPng);
 
