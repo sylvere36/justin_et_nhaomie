@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     email: body?.email ? String(body.email) : null,
     invited_count: Number(body?.invited_count) || 1,
     category: body?.category ? String(body.category) : null,
+    table_name: body?.table_name ? String(body.table_name) : null,
   });
 
   return NextResponse.json({ guest }, { status: 201 });

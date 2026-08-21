@@ -110,6 +110,7 @@ export default function AdminDashboard({
       return (
         g.full_name.toLowerCase().includes(q) ||
         (g.category ?? "").toLowerCase().includes(q) ||
+        (g.table_name ?? "").toLowerCase().includes(q) ||
         (g.phone ?? "").toLowerCase().includes(q) ||
         (g.email ?? "").toLowerCase().includes(q)
       );
@@ -243,6 +244,8 @@ export default function AdminDashboard({
             <FilterTabs value={filter} onChange={setFilter} stats={stats} />
 
             <ExportMenu />
+
+            <ExportPasses onToast={showToast} />
 
             <button
               onClick={() => setModal({ mode: "bulk" })}
@@ -463,6 +466,119 @@ function ExportMenu() {
   );
 }
 
+// Export global des cartes d'embarquement (feuilles A4, 4 par page).
+function ExportPasses({ onToast }: { onToast: (msg: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<"with-table" | "all" | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    if (open) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  async function download(scope: "with-table" | "all") {
+    setBusy(scope);
+    try {
+      const res = await fetch(
+        `/api/embarquement/export/pdf?download=1&scope=${scope}`
+      );
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        onToast(d.error ?? "Export impossible.");
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get("Content-Disposition") ?? "";
+      const name = cd.match(/filename="(.+?)"/)?.[1] ?? "cartes-embarquement.pdf";
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(u);
+      onToast("Cartes d’embarquement générées");
+      setOpen(false);
+    } catch {
+      onToast("Export impossible.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="btn btn-outline"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <IdCardIcon width={18} height={18} />
+        Cartes (PDF)
+      </button>
+
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-encre/30 backdrop-blur-[1px] sm:bg-transparent sm:backdrop-blur-0"
+            onClick={() => !busy && setOpen(false)}
+            aria-hidden
+          />
+          <div
+            role="menu"
+            className="card fixed inset-x-3 bottom-3 z-50 animate-rise p-2 sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-72 sm:animate-none"
+          >
+            <div className="flex items-center justify-between px-3 pb-1 pt-2 sm:pt-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-encre-doux">
+                Cartes d’embarquement · 4 par page A4
+              </p>
+              <button
+                onClick={() => !busy && setOpen(false)}
+                className="icon-btn -mr-1 h-8 w-8 text-encre-doux sm:hidden"
+                aria-label="Fermer"
+              >
+                <XIcon width={18} height={18} />
+              </button>
+            </div>
+            <button
+              onClick={() => download("with-table")}
+              disabled={busy !== null}
+              className="block w-full rounded-xl px-3 py-3 text-left text-sm text-encre transition-colors hover:bg-emeraude/8 disabled:opacity-60 sm:py-2"
+              role="menuitem"
+            >
+              <span className="font-medium">Invités avec une table</span>
+              <span className="block text-xs text-encre-doux">
+                Uniquement ceux ayant un nom de table
+              </span>
+            </button>
+            <button
+              onClick={() => download("all")}
+              disabled={busy !== null}
+              className="block w-full rounded-xl px-3 py-3 text-left text-sm text-encre transition-colors hover:bg-emeraude/8 disabled:opacity-60 sm:py-2"
+              role="menuitem"
+            >
+              <span className="font-medium">Tous les invités</span>
+              <span className="block text-xs text-encre-doux">
+                Sans table → « À l’accueil »
+              </span>
+            </button>
+            {busy && (
+              <p className="px-3 py-2 text-xs text-emeraude">
+                Génération en cours… (quelques secondes)
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: GuestStatus }) {
   if (status === "confirmed")
     return (
@@ -507,6 +623,11 @@ function GuestRow({
           {g.category && (
             <span className="rounded-full bg-terracotta/10 px-2 py-0.5 text-xs font-medium text-terracotta">
               {g.category}
+            </span>
+          )}
+          {g.table_name && (
+            <span className="rounded-full bg-emeraude/10 px-2 py-0.5 text-xs font-medium text-emeraude">
+              {g.table_name}
             </span>
           )}
         </div>
@@ -632,8 +753,10 @@ function BulkModal({
   onClose: () => void;
   onSaved: (msg: string) => void | Promise<void>;
 }) {
+  const [tab, setTab] = useState<"paste" | "file">("file");
   const [text, setText] = useState("");
   const [category, setCategory] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -650,7 +773,7 @@ function BulkModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  async function submit(e: React.FormEvent) {
+  async function submitPaste(e: React.FormEvent) {
     e.preventDefault();
     if (count === 0) {
       setError("Collez au moins un nom (un par ligne).");
@@ -677,6 +800,32 @@ function BulkModal({
     }
   }
 
+  async function submitFile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!file) {
+      setError("Choisissez un fichier Excel (.xlsx).");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/guests/import", { method: "POST", body: fd });
+    if (res.ok) {
+      const d = await res.json();
+      const parts: string[] = [];
+      if (d.created) parts.push(`${d.created} ajouté${d.created > 1 ? "s" : ""}`);
+      if (d.updated)
+        parts.push(`${d.updated} table${d.updated > 1 ? "s" : ""} mise${d.updated > 1 ? "s" : ""} à jour`);
+      if (d.unchanged) parts.push(`${d.unchanged} inchangé${d.unchanged > 1 ? "s" : ""}`);
+      await onSaved(parts.length ? `Import : ${parts.join(" · ")}` : "Import terminé");
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "Import impossible.");
+      setSaving(false);
+    }
+  }
+
   return (
     <div
       className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-encre/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
@@ -691,70 +840,154 @@ function BulkModal({
       >
         <div className="flex items-center justify-between">
           <h2 id="bulk-modal-title" className="font-serif text-2xl text-encre">
-            Importer une liste
+            Importer des invités
           </h2>
           <button onClick={onClose} className="icon-btn text-encre-doux" aria-label="Fermer">
             <XIcon />
           </button>
         </div>
 
-        <form onSubmit={submit} className="mt-5 space-y-4">
-          <div>
-            <label htmlFor="bulk" className="field-label">
-              Un invité par ligne
-            </label>
-            <textarea
-              id="bulk"
-              autoFocus
-              rows={9}
-              className="field resize-y font-sans"
-              placeholder={"Prof Coulibaly Namory\nDr. Ange Barou\nM. et Mme Ahoussi\n…"}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            <p className="mt-1.5 text-xs text-encre-doux">
-              La numérotation (« 1- », « 12. ») est ignorée. Les couples
-              (« et épouse », « M. et Mme ») reçoivent 2 places automatiquement.
-            </p>
-          </div>
+        {/* Onglets */}
+        <div className="mt-4 inline-flex rounded-full border border-or/25 bg-creme p-1">
+          {(
+            [
+              { key: "file", label: "Fichier Excel" },
+              { key: "paste", label: "Coller une liste" },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setTab(t.key);
+                setError(null);
+              }}
+              aria-pressed={tab === t.key}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                tab === t.key
+                  ? "bg-emeraude text-ivoire"
+                  : "text-encre-doux hover:text-encre"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-          <div>
-            <label htmlFor="bulk-cat" className="field-label">
-              Catégorie commune (facultatif)
-            </label>
-            <input
-              id="bulk-cat"
-              className="field"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Ex. Corps professoral, Clergé, Invités d'honneur…"
-            />
-          </div>
+        {tab === "file" ? (
+          <form onSubmit={submitFile} className="mt-5 space-y-4">
+            <div className="rounded-xl border border-or/30 bg-creme/60 px-4 py-3 text-sm text-encre-doux">
+              Deux colonnes&nbsp;: <strong className="text-encre">Nom</strong> et{" "}
+              <strong className="text-encre">Table</strong>. Les invités déjà
+              présents sont reconnus par leur nom&nbsp;: leur table est
+              complétée, sans créer de doublon. Les noms inconnus sont ajoutés.
+              <a
+                href="/api/guests/template"
+                className="mt-2 inline-flex items-center gap-1.5 font-medium text-emeraude hover:underline"
+              >
+                <DownloadIcon width={16} height={16} />
+                Télécharger le modèle Excel
+              </a>
+            </div>
 
-          {error && (
-            <p role="alert" className="text-sm text-terracotta">
-              {error}
-            </p>
-          )}
+            <div>
+              <label htmlFor="xlsx" className="field-label">
+                Fichier .xlsx
+              </label>
+              <input
+                id="xlsx"
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setError(null);
+                }}
+                className="block w-full text-sm text-encre file:mr-3 file:rounded-full file:border-0 file:bg-emeraude file:px-4 file:py-2 file:text-sm file:font-medium file:text-ivoire hover:file:bg-emeraude-fonce"
+              />
+              {file && (
+                <p className="mt-1.5 text-xs text-encre-doux">
+                  Sélectionné&nbsp;: {file.name}
+                </p>
+              )}
+            </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-sm text-encre-doux">
-              {count} invité{count > 1 ? "s" : ""} détecté{count > 1 ? "s" : ""}
-            </span>
-            <div className="flex gap-2">
+            {error && (
+              <p role="alert" className="text-sm text-terracotta">
+                {error}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={onClose} className="btn btn-ghost">
                 Annuler
               </button>
               <button
                 type="submit"
-                disabled={saving || count === 0}
+                disabled={saving || !file}
                 className="btn btn-primary"
               >
-                {saving ? "Import…" : `Importer ${count || ""}`.trim()}
+                {saving ? "Import…" : "Importer le fichier"}
               </button>
             </div>
-          </div>
-        </form>
+          </form>
+        ) : (
+          <form onSubmit={submitPaste} className="mt-5 space-y-4">
+            <div>
+              <label htmlFor="bulk" className="field-label">
+                Un invité par ligne
+              </label>
+              <textarea
+                id="bulk"
+                rows={8}
+                className="field resize-y font-sans"
+                placeholder={"Prof Coulibaly Namory\nDr. Ange Barou\nM. et Mme Ahoussi\n…"}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+              <p className="mt-1.5 text-xs text-encre-doux">
+                La numérotation (« 1- », « 12. ») est ignorée. Les couples
+                (« et épouse », « M. et Mme ») reçoivent 2 places automatiquement.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="bulk-cat" className="field-label">
+                Catégorie commune (facultatif)
+              </label>
+              <input
+                id="bulk-cat"
+                className="field"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Ex. Corps professoral, Clergé, Invités d'honneur…"
+              />
+            </div>
+
+            {error && (
+              <p role="alert" className="text-sm text-terracotta">
+                {error}
+              </p>
+            )}
+
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-sm text-encre-doux">
+                {count} invité{count > 1 ? "s" : ""} détecté{count > 1 ? "s" : ""}
+              </span>
+              <div className="flex gap-2">
+                <button type="button" onClick={onClose} className="btn btn-ghost">
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || count === 0}
+                  className="btn btn-primary"
+                >
+                  {saving ? "Import…" : `Importer ${count || ""}`.trim()}
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
@@ -775,6 +1008,7 @@ function GuestModal({
 }) {
   const [fullName, setFullName] = useState(guest?.full_name ?? "");
   const [category, setCategory] = useState(guest?.category ?? "");
+  const [tableName, setTableName] = useState(guest?.table_name ?? "");
   const [phone, setPhone] = useState(guest?.phone ?? "");
   const [email, setEmail] = useState(guest?.email ?? "");
   const [invited, setInvited] = useState(guest?.invited_count ?? 1);
@@ -800,6 +1034,7 @@ function GuestModal({
     const payload = {
       full_name: fullName,
       category,
+      table_name: tableName,
       phone,
       email,
       invited_count: invited,
@@ -888,6 +1123,23 @@ function GuestModal({
                 onChange={(e) => setInvited(Math.max(1, Number(e.target.value) || 1))}
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="tbl" className="field-label">
+              Nom / n° de table
+            </label>
+            <input
+              id="tbl"
+              className="field"
+              value={tableName}
+              onChange={(e) => setTableName(e.target.value)}
+              placeholder="Ex. Table 1, Table Pastorale…"
+            />
+            <p className="mt-1.5 text-xs text-encre-doux">
+              Affiché sur la carte d’embarquement. Laissez vide pour «&nbsp;À
+              l’accueil&nbsp;».
+            </p>
           </div>
 
           <div>

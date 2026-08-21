@@ -17,6 +17,7 @@ export interface Guest {
   email: string | null;
   invited_count: number;
   category: string | null;
+  table_name: string | null;
   status: GuestStatus;
   attending_count: number | null;
   message: string | null;
@@ -30,6 +31,7 @@ export interface NewGuest {
   email?: string | null;
   invited_count?: number;
   category?: string | null;
+  table_name?: string | null;
 }
 
 export interface GuestPatch {
@@ -38,6 +40,7 @@ export interface GuestPatch {
   email?: string | null;
   invited_count?: number;
   category?: string | null;
+  table_name?: string | null;
 }
 
 export interface RsvpInput {
@@ -98,6 +101,8 @@ function ensureSchema(): Promise<void> {
           created_at timestamptz NOT NULL DEFAULT now()
         )
       `;
+      // Migration idempotente : colonne « table_name » (nom de table de réception).
+      await sql`ALTER TABLE guests ADD COLUMN IF NOT EXISTS table_name text`;
     })().catch((err) => {
       initPromise = null;
       throw err;
@@ -115,6 +120,7 @@ function mapRow(r: Record<string, unknown>): Guest {
     email: (r.email as string) ?? null,
     invited_count: Number(r.invited_count ?? 1),
     category: (r.category as string) ?? null,
+    table_name: (r.table_name as string) ?? null,
     status: (r.status as GuestStatus) ?? "pending",
     attending_count:
       r.attending_count === null || r.attending_count === undefined
@@ -179,12 +185,13 @@ export async function createGuest(input: NewGuest): Promise<Guest> {
   const email = input.email?.trim() || null;
   const invited_count = Math.max(1, Math.floor(input.invited_count ?? 1));
   const category = input.category?.trim() || null;
+  const table_name = input.table_name?.trim() || null;
 
   if (sql) {
     await ensureSchema();
     const rows = await sql`
-      INSERT INTO guests (token, full_name, phone, email, invited_count, category)
-      VALUES (${token}, ${full_name}, ${phone}, ${email}, ${invited_count}, ${category})
+      INSERT INTO guests (token, full_name, phone, email, invited_count, category, table_name)
+      VALUES (${token}, ${full_name}, ${phone}, ${email}, ${invited_count}, ${category}, ${table_name})
       RETURNING *
     `;
     return mapRow((rows as Record<string, unknown>[])[0]);
@@ -199,6 +206,7 @@ export async function createGuest(input: NewGuest): Promise<Guest> {
     email,
     invited_count,
     category,
+    table_name,
     status: "pending",
     attending_count: null,
     message: null,
@@ -230,6 +238,10 @@ export async function updateGuest(
           : Math.max(1, Math.floor(patch.invited_count)),
       category:
         patch.category === undefined ? g.category : patch.category?.trim() || null,
+      table_name:
+        patch.table_name === undefined
+          ? g.table_name
+          : patch.table_name?.trim() || null,
     };
     const updated = await sql`
       UPDATE guests SET
@@ -237,7 +249,8 @@ export async function updateGuest(
         phone = ${next.phone},
         email = ${next.email},
         invited_count = ${next.invited_count},
-        category = ${next.category}
+        category = ${next.category},
+        table_name = ${next.table_name}
       WHERE id = ${id}
       RETURNING *
     `;
@@ -254,6 +267,7 @@ export async function updateGuest(
   if (patch.invited_count !== undefined)
     g.invited_count = Math.max(1, Math.floor(patch.invited_count));
   if (patch.category !== undefined) g.category = patch.category?.trim() || null;
+  if (patch.table_name !== undefined) g.table_name = patch.table_name?.trim() || null;
   store[idx] = g;
   await writeFileStore(store);
   return g;

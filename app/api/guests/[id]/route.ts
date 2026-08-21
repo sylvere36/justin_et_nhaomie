@@ -22,6 +22,8 @@ export async function PATCH(
     patch.invited_count = Number(body.invited_count) || 1;
   if (body.category !== undefined)
     patch.category = body.category ? String(body.category) : null;
+  if (body.table_name !== undefined)
+    patch.table_name = body.table_name ? String(body.table_name) : null;
 
   const guest = await updateGuest(id, patch);
   if (!guest) {

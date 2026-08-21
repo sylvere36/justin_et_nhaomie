@@ -70,9 +70,11 @@ function hashNum(token: string): number {
 function flightNo(token: string): string {
   return `JN ${(hashNum(token) % 900) + 100}`;
 }
-function seatNo(token: string): string {
-  const h = hashNum(token);
-  return `${(h % 30) + 1}${"ABCDEF"[Math.floor(h / 64) % 6]}`;
+// Valeur affichée pour la table de réception. Repli « À l'accueil » quand aucune
+// table n'est renseignée (choix par défaut pour la carte individuelle).
+function tableValue(guest: { table_name?: string | null }): string {
+  const t = (guest.table_name ?? "").trim();
+  return t || "À l'accueil";
 }
 function gateNo(token: string): string {
   return String((hashNum(token) % 24) + 1).padStart(2, "0");
@@ -144,9 +146,16 @@ function Block({
         style={{
           fontFamily: "Barlow",
           fontWeight: big ? 700 : 600,
-          fontSize: big ? 30 : 23,
+          // Réduction automatique pour les valeurs longues (noms de table).
+          fontSize:
+            value.length <= 9
+              ? big
+                ? 30
+                : 23
+              : Math.max(big ? 17 : 14, Math.round(((big ? 30 : 23) * 9) / value.length)),
           color,
           marginTop: 2,
+          whiteSpace: "nowrap",
         }}
       >
         {value}
@@ -243,7 +252,7 @@ function Model1(guest: Guest, qr: string) {
           <Block label="Date" value="22 AOÛT 2026" />
           <Block label="Embarquement" value="10:00" big color={EMERALD} />
           <Block label="Porte / Gate" value={gateNo(guest.token)} big color={EMERALD} />
-          <Block label="Siège / Seat" value={seatNo(guest.token)} big color={EMERALD} />
+          <Block label="Table" value={tableValue(guest)} big color={EMERALD} />
           <Block label="Vol / Flight" value={flightNo(guest.token)} />
         </div>
 
@@ -287,7 +296,7 @@ function Model1(guest: Guest, qr: string) {
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <Block label="Vol" value={flightNo(guest.token)} color={CREAM} labelColor={PALE} />
             <Block label="Porte" value={gateNo(guest.token)} color={CREAM} labelColor={PALE} />
-            <Block label="Siège" value={seatNo(guest.token)} color={CREAM} labelColor={PALE} />
+            <Block label="Table" value={tableValue(guest)} color={CREAM} labelColor={PALE} />
           </div>
         </div>
 
@@ -378,7 +387,7 @@ function Model2(guest: Guest, qr: string, compass: string) {
           <Block label="Date" value="22 AOÛT 2026" color={CREAM} labelColor={GOLD_SOFT} />
           <Block label="Embarquement" value="10:00" big color={GOLD_SOFT} labelColor={PALE} />
           <Block label="Porte / Gate" value={gateNo(guest.token)} big color={GOLD_SOFT} labelColor={PALE} />
-          <Block label="Siège / Seat" value={seatNo(guest.token)} big color={GOLD_SOFT} labelColor={PALE} />
+          <Block label="Table" value={tableValue(guest)} big color={GOLD_SOFT} labelColor={PALE} />
           <Block label="Classe" value="INVITÉ D’HONNEUR" color={CREAM} labelColor={GOLD_SOFT} />
         </div>
 
@@ -411,7 +420,7 @@ function Model2(guest: Guest, qr: string, compass: string) {
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <Block label="Vol" value={flightNo(guest.token)} color={CREAM} labelColor={GOLD_SOFT} />
             <Block label="Porte" value={gateNo(guest.token)} color={CREAM} labelColor={GOLD_SOFT} />
-            <Block label="Siège" value={seatNo(guest.token)} color={CREAM} labelColor={GOLD_SOFT} />
+            <Block label="Table" value={tableValue(guest)} color={CREAM} labelColor={GOLD_SOFT} />
           </div>
         </div>
 
@@ -433,7 +442,7 @@ function Model2(guest: Guest, qr: string, compass: string) {
 
 // --- Modèle 3 : Ticket (bandeau doré, code-barres vertical) ----------------
 
-function Model3(guest: Guest, qr: string) {
+function Model3(guest: Guest, qr: string, radius = 30) {
   const vbars = barcode(guest.token + "v", 74);
   const sbars = barcode(guest.token + "s", 40);
   const chevron = `repeating-linear-gradient(-45deg, ${GOLD} 0, ${GOLD} 9px, transparent 9px, transparent 20px)`;
@@ -443,7 +452,7 @@ function Model3(guest: Guest, qr: string) {
         display: "flex",
         width: BP_W,
         height: BP_H,
-        borderRadius: 30,
+        borderRadius: radius,
         overflow: "hidden",
         fontFamily: "Barlow",
         backgroundColor: IVORY,
@@ -458,27 +467,27 @@ function Model3(guest: Guest, qr: string) {
             justifyContent: "space-between",
             height: 120,
             padding: "0 46px",
-            backgroundColor: EMERALD,
+            backgroundColor: GOLD,
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
-            <Roundel bg={GOLD} plane={EMERALD} />
+            <Roundel bg={EMERALD} plane={GOLD_SOFT} />
             <div style={{ display: "flex", flexDirection: "column", marginLeft: 18 }}>
-              <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 30, letterSpacing: 1, color: CREAM }}>
+              <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 30, letterSpacing: 1, color: EMERALD_DEEP }}>
                 JUSTIN &amp; NAOMIE
               </div>
-              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 13, letterSpacing: 4, color: GOLD_SOFT }}>
+              <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 13, letterSpacing: 4, color: EMERALD }}>
                 AIRLINES · PREMIÈRE CLASSE
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", padding: "7px 18px", borderRadius: 9999, backgroundColor: GOLD }}>
-            <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 20, letterSpacing: 3, color: EMERALD_DEEP }}>
+          <div style={{ display: "flex", padding: "7px 18px", borderRadius: 9999, backgroundColor: EMERALD }}>
+            <div style={{ fontFamily: "Barlow", fontWeight: 700, fontSize: 20, letterSpacing: 3, color: GOLD_SOFT }}>
               PREMIÈRE
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", height: 4, backgroundColor: GOLD }} />
+        <div style={{ display: "flex", height: 4, backgroundColor: EMERALD }} />
 
         <div style={{ display: "flex", flex: 1, padding: "28px 44px" }}>
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", marginRight: 38 }}>
@@ -500,7 +509,7 @@ function Model3(guest: Guest, qr: string) {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <Block label="Porte / Gate" value={gateNo(guest.token)} big color={EMERALD} />
               <Block label="Embarquement" value="10:00" big color={EMERALD} />
-              <Block label="Siège / Seat" value={seatNo(guest.token)} big color={EMERALD} align="flex-end" />
+              <Block label="Table" value={tableValue(guest)} big color={EMERALD} align="flex-end" />
             </div>
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ fontFamily: "Barlow", fontWeight: 600, fontSize: 12, letterSpacing: 1, color: MUTED }}>
@@ -527,7 +536,7 @@ function Model3(guest: Guest, qr: string) {
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <Block label="Porte" value={gateNo(guest.token)} big color={EMERALD} />
             <Block label="Embarq." value="10:00" big color={EMERALD} />
-            <Block label="Siège" value={seatNo(guest.token)} big color={EMERALD} align="flex-end" />
+            <Block label="Table" value={tableValue(guest)} big color={EMERALD} align="flex-end" />
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -624,7 +633,7 @@ function Model4(guest: Guest, qr: string) {
             <Block label="Passager" value={guest.full_name} color={EMERALD} labelColor={GOLD} />
             <Block label="Vol" value={flightNo(guest.token)} color={EMERALD} labelColor={GOLD} />
             <Block label="Porte" value={gateNo(guest.token)} color={EMERALD} labelColor={GOLD} />
-            <Block label="Siège" value={seatNo(guest.token)} color={EMERALD} labelColor={GOLD} />
+            <Block label="Table" value={tableValue(guest)} color={EMERALD} labelColor={GOLD} />
             <Block label="Classe" value="PREMIÈRE" color={EMERALD} labelColor={GOLD} align="flex-end" />
           </div>
         </div>
@@ -648,7 +657,7 @@ function Model4(guest: Guest, qr: string) {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Block label="Date" value="22 AOÛT" color={EMERALD} labelColor={GOLD} />
             <Block label="Embarq." value="10:00" color={EMERALD} labelColor={GOLD} />
-            <Block label="Siège" value={seatNo(guest.token)} color={EMERALD} labelColor={GOLD} align="flex-end" />
+            <Block label="Table" value={tableValue(guest)} color={EMERALD} labelColor={GOLD} align="flex-end" />
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "flex-end", height: 46 }}>
@@ -668,11 +677,16 @@ function Model4(guest: Guest, qr: string) {
 
 // --- Assemblage ------------------------------------------------------------
 
-export async function buildBoardingPass(
-  origin: string,
-  guest: Guest,
-  model: 1 | 2 | 3 | 4
-): Promise<ImageResponse> {
+type FontWeight = 400 | 500 | 600 | 700;
+export type BoardingFonts = {
+  name: string;
+  data: ArrayBuffer;
+  weight: FontWeight;
+  style: "normal";
+}[];
+
+// Charge une seule fois les 7 polices (réutilisable pour l'export en série).
+export async function loadBoardingFonts(origin: string): Promise<BoardingFonts> {
   const [barlow, barlowMed, barlowSemi, barlowBold, greatVibes, spaceMono, marcellus] =
     await Promise.all([
       loadFont(origin, "Barlow-Regular.ttf"),
@@ -683,6 +697,25 @@ export async function buildBoardingPass(
       loadFont(origin, "SpaceMono-Regular.ttf"),
       loadFont(origin, "Marcellus-Regular.ttf"),
     ]);
+  return [
+    { name: "Barlow", data: barlow, weight: 400, style: "normal" },
+    { name: "Barlow", data: barlowMed, weight: 500, style: "normal" },
+    { name: "Barlow", data: barlowSemi, weight: 600, style: "normal" },
+    { name: "Barlow", data: barlowBold, weight: 700, style: "normal" },
+    { name: "GreatVibes", data: greatVibes, weight: 400, style: "normal" },
+    { name: "SpaceMono", data: spaceMono, weight: 400, style: "normal" },
+    { name: "Marcellus", data: marcellus, weight: 400, style: "normal" },
+  ];
+}
+
+export async function buildBoardingPass(
+  origin: string,
+  guest: Guest,
+  model: 1 | 2 | 3 | 4,
+  opts?: { square?: boolean; fonts?: BoardingFonts }
+): Promise<ImageResponse> {
+  const radius = opts?.square ? 0 : 30;
+  const fonts = opts?.fonts ?? (await loadBoardingFonts(origin));
 
   const qr = await QRCode.toDataURL(`${origin}/rsvp/${guest.token}`, {
     margin: 0,
@@ -696,22 +729,10 @@ export async function buildBoardingPass(
     model === 4
       ? Model4(guest, qr)
       : model === 3
-        ? Model3(guest, qr)
+        ? Model3(guest, qr, radius)
         : model === 2
           ? Model2(guest, qr, compass)
           : Model1(guest, qr);
 
-  return new ImageResponse(element, {
-    width: BP_W,
-    height: BP_H,
-    fonts: [
-      { name: "Barlow", data: barlow, weight: 400, style: "normal" },
-      { name: "Barlow", data: barlowMed, weight: 500, style: "normal" },
-      { name: "Barlow", data: barlowSemi, weight: 600, style: "normal" },
-      { name: "Barlow", data: barlowBold, weight: 700, style: "normal" },
-      { name: "GreatVibes", data: greatVibes, weight: 400, style: "normal" },
-      { name: "SpaceMono", data: spaceMono, weight: 400, style: "normal" },
-      { name: "Marcellus", data: marcellus, weight: 400, style: "normal" },
-    ],
-  });
+  return new ImageResponse(element, { width: BP_W, height: BP_H, fonts });
 }

@@ -60,6 +60,21 @@ export function rsvpUrl(origin: string, token: string): string {
   return `${origin.replace(/\/$/, "")}/rsvp/${token}`;
 }
 
+/**
+ * Clé normalisée pour comparer deux noms d'invités (détection de doublons à
+ * l'import) : accents retirés, minuscules, ponctuation neutralisée, espaces
+ * compactés. « Mr QOUIOH Sylvain » et « mr  qouioh sylvain » donnent la même clé.
+ */
+export function normalizeName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 /** Slug propre pour un nom de fichier (accents retirés, espaces → tirets). */
 export function guestFileSlug(name: string): string {
   return (

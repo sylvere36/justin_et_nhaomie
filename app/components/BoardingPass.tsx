@@ -13,7 +13,7 @@ export default function BoardingPass({
   token: string;
   guestName: string;
 }) {
-  const [model, setModel] = useState<1 | 2 | 3 | 4>(1);
+  const [model, setModel] = useState<1 | 2 | 3 | 4>(3);
   const [format, setFormat] = useState<"a4" | "a5">("a4");
 
   const pdfHref = `/api/embarquement/${token}/pdf?download=1&model=${model}${
@@ -24,11 +24,17 @@ export default function BoardingPass({
   )}-modele${model}-${format.toUpperCase()}.pdf`;
 
   const models = [
+    { key: 3 as const, label: "Modèle 3", sub: "Ticket Or ★" },
     { key: 1 as const, label: "Modèle 1", sub: "Compagnie" },
     { key: 2 as const, label: "Modèle 2", sub: "Prestige" },
-    { key: 3 as const, label: "Modèle 3", sub: "Ticket" },
     { key: 4 as const, label: "Modèle 4", sub: "Épuré" },
   ];
+  const modelLabel: Record<number, string> = {
+    1: "Compagnie",
+    2: "Prestige",
+    3: "Ticket Or",
+    4: "Épuré",
+  };
 
   return (
     <div>
@@ -67,9 +73,7 @@ export default function BoardingPass({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`/api/embarquement/${token}?model=${model}`}
-          alt={`Carte d’embarquement — ${
-            model === 1 ? "modèle Classique" : "modèle Prestige"
-          }`}
+          alt={`Carte d’embarquement — modèle ${modelLabel[model]}`}
           className="h-auto w-full"
         />
       </div>

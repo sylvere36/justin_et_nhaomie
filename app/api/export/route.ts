@@ -43,6 +43,7 @@ export async function GET(req: Request) {
   const headers = [
     "Nom complet",
     "Catégorie",
+    "Table",
     "Téléphone",
     "Email",
     "Places invitées",
@@ -56,6 +57,7 @@ export async function GET(req: Request) {
     [
       g.full_name,
       g.category ?? "",
+      g.table_name ?? "",
       g.phone ?? "",
       g.email ?? "",
       g.invited_count,
@@ -75,6 +77,7 @@ export async function GET(req: Request) {
   );
   const footer = [
     "TOTAL",
+    "",
     "",
     "",
     "",
